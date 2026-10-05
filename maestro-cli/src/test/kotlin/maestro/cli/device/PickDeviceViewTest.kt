@@ -12,6 +12,7 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStub
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension
 import uk.org.webcompere.systemstubs.stream.SystemIn
 import uk.org.webcompere.systemstubs.stream.SystemOut
+import uk.org.webcompere.systemstubs.stream.input.LinesAltStream
 
 @ExtendWith(SystemStubsExtension::class)
 class PickDeviceViewTest {
@@ -24,7 +25,7 @@ class PickDeviceViewTest {
 
     @Test
     fun `pickRunningDevice prints a flat list and returns the chosen device`() {
-        systemIn.provideLines("2")
+        systemIn.lines("2")
 
         val picked = PickDeviceView.pickRunningDevice(sampleDevices())
 
@@ -44,7 +45,7 @@ class PickDeviceViewTest {
         val firstAndroid = connected("emulator-5554", Platform.ANDROID)
         val ios = connected("iPhone 15", Platform.IOS)
         val secondAndroid = connected("emulator-5556", Platform.ANDROID)
-        systemIn.provideLines("2")
+        systemIn.lines("2")
 
         val picked = PickDeviceView.pickRunningDevice(listOf(firstAndroid, ios, secondAndroid))
 
@@ -53,7 +54,7 @@ class PickDeviceViewTest {
 
     @Test
     fun `pickRunningDevice accepts a padded number after rejecting invalid input`() {
-        systemIn.provideLines("nope", "0", "9", "   ", " 1 ")
+        systemIn.lines("nope", "0", "9", "   ", " 1 ")
 
         val picked = PickDeviceView.pickRunningDevice(sampleDevices())
 
@@ -67,7 +68,7 @@ class PickDeviceViewTest {
     fun `pickRunningDevice treats q as cancel`() {
         for (input in listOf("q", "Q", " q ")) {
             systemOut.clear()
-            systemIn.provideLines(input)
+            systemIn.lines(input)
 
             val error = assertThrows<CliError> {
                 PickDeviceView.pickRunningDevice(sampleDevices())
@@ -79,13 +80,17 @@ class PickDeviceViewTest {
 
     @Test
     fun `pickRunningDevice treats end of input as cancel`() {
-        systemIn.provideLines()
+        systemIn.lines()
 
         val error = assertThrows<CliError> {
             PickDeviceView.pickRunningDevice(sampleDevices())
         }
 
         assertThat(error.message).isEqualTo("Device selection was cancelled")
+    }
+
+    private fun SystemIn.lines(vararg lines: String) {
+        setInputStream(LinesAltStream(*lines))
     }
 
     private fun visibleOutput(): String {

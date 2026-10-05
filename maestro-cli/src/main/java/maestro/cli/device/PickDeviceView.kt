@@ -37,12 +37,19 @@ object PickDeviceView {
     }
 
     fun pickRunningDevice(devices: List<Device>): Device {
-        printIndexedDevices(devices)
+        println("There are multiple connected devices")
+        devices.forEachIndexed { index, device ->
+            println(
+                ansi()
+                    .render("[")
+                    .fgCyan()
+                    .render("${index + 1}")
+                    .fgDefault()
+                    .render("]: ${device.description}")
+            )
+        }
 
-        println("Multiple running devices detected. Choose a device to run on.")
-        printEnterNumberPrompt()
-
-        return pickIndex(devices)
+        return readRunningDeviceChoice(devices)
     }
 
     private fun <T> pickIndex(data: List<T>): T {
@@ -56,6 +63,27 @@ object PickDeviceView {
             }
 
             return data[index - 1]
+        }
+
+        error("Interrupted")
+    }
+
+    private fun readRunningDeviceChoice(devices: List<Device>): Device {
+        while (!Thread.interrupted()) {
+            print("""Please choose one (or "q" to quit): """)
+            System.out.flush()
+
+            val input = readlnOrNull()?.trim()
+            if (input == null || input.equals("q", ignoreCase = true)) {
+                throw CliError("Device selection was cancelled")
+            }
+
+            val index = input.toIntOrNull()
+            if (index != null && index in 1..devices.size) {
+                return devices[index - 1]
+            }
+
+            println("""Please enter a number between 1 and ${devices.size}, or "q" to quit.""")
         }
 
         error("Interrupted")
